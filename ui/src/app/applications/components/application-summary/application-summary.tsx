@@ -385,9 +385,9 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                     version: '',
                     parentRefs: [] as models.ResourceRef[],
                     info: [] as models.InfoItem[],
-                    resourceVersion: props.app.metadata.resourceVersion || '',
-                    uid: props.app.metadata.uid || ''
-                };
+                    resourceVersion: props.app.metadata.resourceVersion,
+                    uid: props.app.metadata.uid
+                };          
                 
                 await services.applications.runResourceAction(
                     props.app.metadata.name,
