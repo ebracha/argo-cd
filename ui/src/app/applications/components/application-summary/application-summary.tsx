@@ -382,7 +382,7 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                     namespace: props.app.metadata.namespace ,
                     kind: 'Application',
                     group: 'argoproj.io',
-                    version: 'v1alpha1',
+                    version: '',
                     parentRefs: [] as models.ResourceRef[],
                     info: [] as models.InfoItem[],
                     resourceVersion: props.app.metadata.resourceVersion || '',
