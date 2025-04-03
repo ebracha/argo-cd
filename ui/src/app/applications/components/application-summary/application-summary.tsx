@@ -382,11 +382,11 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                     namespace: props.app.metadata.namespace ,
                     kind: 'Application',
                     group: 'argoproj.io',
-                    version: '',
+                    version: props.app.apiVersion,
                     parentRefs: [] as models.ResourceRef[],
                     info: [] as models.InfoItem[],
                     resourceVersion: props.app.metadata.resourceVersion,
-                    uid: props.app.metadata.uid
+                    uid: props.app.metadata.uid,
                 };          
                 
                 await services.applications.runResourceAction(
@@ -395,6 +395,28 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                     resource,
                     'toggle-auto-sync'
                 );
+            } catch (e) {
+                ctx.notifications.show({
+                    content: <ErrorNotification title={`Unable to "${confirmationTitle.replace(/\?/g, '')}:`} e={e} />,
+                    type: NotificationType.Error
+                });
+            } finally {
+                setChangeSync(false);
+            }
+        }
+    }
+
+    async function setAutoSyncPolicy(ctx: ContextApis, confirmationTitle: string, confirmationText: string, prune: boolean, selfHeal: boolean) {
+        const confirmed = await ctx.popup.confirm(confirmationTitle, confirmationText);
+        if (confirmed) {
+            try {
+                setChangeSync(true);
+                const updatedApp = JSON.parse(JSON.stringify(props.app)) as models.Application;
+                if (!updatedApp.spec.syncPolicy) {
+                    updatedApp.spec.syncPolicy = {};
+                }
+                updatedApp.spec.syncPolicy.automated = {prune, selfHeal};
+                await updateApp(updatedApp, {validate: false});
             } catch (e) {
                 ctx.notifications.show({
                     content: <ErrorNotification title={`Unable to "${confirmationTitle.replace(/\?/g, '')}:`} e={e} />,
@@ -529,7 +551,7 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                                                 <button
                                                     className='argo-button argo-button--base'
                                                     onClick={() =>
-                                                        setAutoSync(
+                                                        setAutoSyncPolicy(
                                                             ctx,
                                                             'Disable Prune Resources?',
                                                             'Are you sure you want to disable resource pruning during automated application synchronization?',
@@ -543,7 +565,7 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                                                 <button
                                                     className='argo-button argo-button--base'
                                                     onClick={() =>
-                                                        setAutoSync(
+                                                        setAutoSyncPolicy(
                                                             ctx,
                                                             'Enable Prune Resources?',
                                                             'Are you sure you want to enable resource pruning during automated application synchronization?',
@@ -563,7 +585,7 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                                                 <button
                                                     className='argo-button argo-button--base'
                                                     onClick={() =>
-                                                        setAutoSync(
+                                                        setAutoSyncPolicy(
                                                             ctx,
                                                             'Disable Self Heal?',
                                                             'Are you sure you want to disable automated self healing?',
@@ -577,7 +599,7 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                                                 <button
                                                     className='argo-button argo-button--base'
                                                     onClick={() =>
-                                                        setAutoSync(
+                                                        setAutoSyncPolicy(
                                                             ctx,
                                                             'Enable Self Heal?',
                                                             'Are you sure you want to enable automated self healing?',
