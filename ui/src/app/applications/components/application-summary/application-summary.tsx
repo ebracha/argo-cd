@@ -377,34 +377,27 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
         if (confirmed) {
             try {
                 setChangeSync(true);
-                const updatedApp = JSON.parse(JSON.stringify(props.app)) as models.Application;
-                if (!updatedApp.spec.syncPolicy) {
-                    updatedApp.spec.syncPolicy = {};
-                }
-                updatedApp.spec.syncPolicy.automated = {prune, selfHeal};
-                await updateApp(updatedApp, {validate: false});
+                const resource: models.ResourceNode = {
+                    name: props.app.metadata.name,
+                    namespace: props.app.metadata.namespace ,
+                    kind: 'Application',
+                    group: 'argoproj.io',
+                    version: 'v1alpha1',
+                    parentRefs: [] as models.ResourceRef[],
+                    info: [] as models.InfoItem[],
+                    resourceVersion: props.app.metadata.resourceVersion || '',
+                    uid: props.app.metadata.uid || ''
+                };
+                
+                await services.applications.runResourceAction(
+                    props.app.metadata.name,
+                    props.app.metadata.namespace,
+                    resource,
+                    'toggle-auto-sync'
+                );
             } catch (e) {
                 ctx.notifications.show({
                     content: <ErrorNotification title={`Unable to "${confirmationTitle.replace(/\?/g, '')}:`} e={e} />,
-                    type: NotificationType.Error
-                });
-            } finally {
-                setChangeSync(false);
-            }
-        }
-    }
-
-    async function unsetAutoSync(ctx: ContextApis) {
-        const confirmed = await ctx.popup.confirm('Disable Auto-Sync?', 'Are you sure you want to disable automated application synchronization');
-        if (confirmed) {
-            try {
-                setChangeSync(true);
-                const updatedApp = JSON.parse(JSON.stringify(props.app)) as models.Application;
-                updatedApp.spec.syncPolicy.automated = null;
-                await updateApp(updatedApp, {validate: false});
-            } catch (e) {
-                ctx.notifications.show({
-                    content: <ErrorNotification title='Unable to disable Auto-Sync' e={e} />,
                     type: NotificationType.Error
                 });
             } finally {
@@ -510,7 +503,7 @@ export const ApplicationSummary = (props: ApplicationSummaryProps) => {
                                 <div className='columns small-3'>{(app.spec.syncPolicy && app.spec.syncPolicy.automated && <span>AUTOMATED</span>) || <span>NONE</span>}</div>
                                 <div className='columns small-9'>
                                     {(app.spec.syncPolicy && app.spec.syncPolicy.automated && (
-                                        <button className='argo-button argo-button--base' onClick={() => unsetAutoSync(ctx)}>
+                                        <button className='argo-button argo-button--base' onClick={() => setAutoSync(ctx, 'Disable Auto-Sync?', 'Are you sure you want to disable automated application synchronization', false, false)}>
                                             <Spinner show={changeSync} style={{marginRight: '5px'}} />
                                             Disable Auto-Sync
                                         </button>
